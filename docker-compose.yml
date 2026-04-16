@@ -10,6 +10,8 @@
 
 services:
   mqtt-sma-bridge:
+    env_file:
+      - .env
     image: michelmu/mqtt-sma-emeter:latest
     container_name: mqtt-sma-bridge
     restart: unless-stopped
@@ -19,3 +21,8 @@ services:
     environment:
       # Quick override without editing config.yaml. Also settable in config.yaml.
       LOG_LEVEL: INFO
+      # MQTT connection — overrides mqtt.broker/port/username/password in config.yaml
+      # MQTT_BROKER: 192.168.10.20
+      # MQTT_PORT: "1883"
+      # MQTT_USERNAME: mqtt_agent
+      # MQTT_PASSWORD: secret

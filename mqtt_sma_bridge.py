@@ -50,6 +50,7 @@ OBIS_DUMMY_SEQUENCE = [
     ('M32', 0x00090400), ('C64', 0x00090800),
     ('M32', 0x000A0400), ('C64', 0x000A0800),
     ('M32', 0x000D0400),
+    ('M32', 0x000E0400),
     ('M32', 0x00150400), ('C64', 0x00150800),
     ('M32', 0x00160400), ('C64', 0x00160800),
     ('M32', 0x00170400), ('C64', 0x00170800),
@@ -115,17 +116,19 @@ def build_emeter_packet(
 
     payload_len = 12
 
+    # Consume and supply entries first (matching real SMA EMETER packet structure)
+    pos = w32(pos, OBIS_P_CONSUME_W);  pos = w32(pos, 0); payload_len += 8
+    pos = w32(pos, OBIS_E_CONSUME_WH); pos = w64(pos, 0); payload_len += 12
+    pos = w32(pos, OBIS_P_SUPPLY_W);   pos = w32(pos, max(0, int(round(power_w * 10)))); payload_len += 8
+    pos = w32(pos, OBIS_E_SUPPLY_WH);  pos = w64(pos, max(0, int(round(energy_wh * 3600)))); payload_len += 12
+
+    # Remaining OBIS channels (reactive, apparent, per-phase, etc.) filled with zeros
     for typ, obis in OBIS_DUMMY_SEQUENCE:
         pos = w32(pos, obis)
         if typ == 'M32':
             pos = w32(pos, 0); payload_len += 8
         else:
             pos = w64(pos, 0); payload_len += 12
-
-    pos = w32(pos, OBIS_P_CONSUME_W);  pos = w32(pos, 0); payload_len += 8
-    pos = w32(pos, OBIS_E_CONSUME_WH); pos = w64(pos, 0); payload_len += 12
-    pos = w32(pos, OBIS_P_SUPPLY_W);   pos = w32(pos, max(0, int(round(power_w * 10)))); payload_len += 8
-    pos = w32(pos, OBIS_E_SUPPLY_WH);  pos = w64(pos, max(0, int(round(energy_wh * 3600)))); payload_len += 12
 
     pos = w32(pos, 0x90000000); pos = w32(pos, 0x01020452); payload_len += 8
 
