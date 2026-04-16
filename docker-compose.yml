@@ -1,0 +1,21 @@
+# docker-compose.yml — MQTT → SMA EMETER Bridge
+#
+# IMPORTANT: network_mode: host is required for UDP multicast to reach the
+# SMA Home Manager 2.0. Standard port mapping (-p / ports:) does not work
+# for multicast traffic.
+#
+# Usage:
+#   docker compose up -d
+#   docker compose logs -f
+
+services:
+  mqtt-sma-bridge:
+    image: michelmu/mqtt-sma-emeter:latest
+    container_name: mqtt-sma-bridge
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      # Quick override without editing config.yaml. Also settable in config.yaml.
+      LOG_LEVEL: INFO

@@ -1,0 +1,26 @@
+# mqtt-sma-emeter Konfiguration
+# Diese Datei in den Container mounten: -v ./config.yaml:/app/config.yaml
+
+mqtt:
+  broker: 192.168.1.10
+  port: 1883
+  username: ""
+  password: ""
+  timeout: 300   # Sekunden ohne MQTT-Nachricht → 0 W an SMA Home Manager senden
+
+interface: ""    # Multicast-Quell-Interface: IP ("192.168.1.5") oder Name ("eth0")
+log_level: INFO  # DEBUG | INFO | WARNING | ERROR
+
+emeters:
+  # Beispiel 1: OpenDTU – Power und Energie auf getrennten Topics als plain float
+  - serial: 900000002
+    topic_power: solar/ac/power
+    topic_energy_total: solar/ac/yieldtotal
+    topic_energy_total_unit: kWh   # OpenDTU liefert kWh → Bridge rechnet ×1000 in Wh um
+
+  # Beispiel 2: Tasmota – beide Werte in einer JSON-Nachricht per JSON-Path extrahieren
+  - serial: 900000003
+    topic_power: tele/tasmota_0FF8CC/POWER
+    topic_energy_total: tele/tasmota_0FF8CC/SENSOR
+    topic_energy_total_path: "$.ENERGY.Total"
+    topic_energy_total_unit: kWh
