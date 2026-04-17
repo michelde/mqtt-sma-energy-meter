@@ -527,7 +527,7 @@ def main() -> None:
     # MQTT-Client aufbauen
     client = mqtt.Client(
         callback_api_version=CallbackAPIVersion.VERSION2,
-        client_id="mqtt-sma-bridge",
+        client_id="",
     )
     if cfg["mqtt"]["username"]:
         client.username_pw_set(cfg["mqtt"]["username"], cfg["mqtt"]["password"])
