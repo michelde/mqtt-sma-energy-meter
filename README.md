@@ -71,11 +71,15 @@ emeters:
 | Feld | Pflicht | Beschreibung |
 |------|---------|--------------|
 | `serial` | ja | Virtuelle Seriennummer (32-bit, im LAN eindeutig) |
-| `topic_power` | ja | MQTT-Topic für die aktuelle Leistung in Watt |
+| `topic_power` | ja¹ | MQTT-Topic für die aktuelle Leistung in Watt |
 | `topic_power_path` | nein | JSON-Path zum Wert im Payload (z. B. `$.ENERGY.Power`) |
 | `topic_energy_total` | nein | MQTT-Topic für den kumulierten Energiezähler |
 | `topic_energy_total_path` | nein | JSON-Path zum Wert im Payload |
 | `topic_energy_total_unit` | nein | Einheit des Energiewerts: `Wh` (default) oder `kWh` |
+| `static_power_w` | ja¹ | Fester Leistungswert in Watt (ersetzt MQTT-Topic, z. B. zum Testen) |
+| `static_energy_wh` | nein | Startwert des Energiezählers in Wh bei Verwendung von `static_power_w` |
+
+¹ Entweder `topic_power` **oder** `static_power_w` ist Pflicht.
 
 ### Payload-Formate
 
@@ -201,9 +205,11 @@ Geräteausfall automatisch gelöscht.
 ## Technische Details
 
 - **Protokoll:** SMA Speedwire EMETER v1.0 (UDP-Multicast `239.12.255.254:9522`)
-- **Trigger:** UDP-Paket wird bei jedem eingehenden MQTT-Update gesendet (kein Timer)
-- **Nebenläufigkeit:** MQTT-Callback-Thread + Watchdog-Daemon-Thread, geschützt durch `threading.Lock`
+- **Heartbeat:** Watchdog-Thread sendet jede Sekunde ein UDP-Paket pro Meter — unabhängig von MQTT-Updates. Ohne kontinuierlichen Stream markiert der SHM das Gerät als „getrennt".
+- **Discovery:** Der SMA Home Manager 2.0 sendet alle ~5 Sekunden einen 0x6065-Discovery-Broadcast. Die Bridge antwortet darauf (Unicast zurück an den SHM), damit der SHM das Gerät als dauerhaft aktiv erkennt und Daten an ennexOS weiterleitet.
+- **Nebenläufigkeit:** MQTT-Callback-Thread + Watchdog-Daemon-Thread + UDP-Listener-Thread, geschützt durch `threading.Lock`
 - **Wiederverbindung:** paho-mqtt verbindet sich bei Verbindungsverlust automatisch neu
+- **ennexOS:** Kein Echtzeit-Dashboard — der SHM lädt Daten in Intervallen hoch (~alle 5 Minuten). Der SHM 2.0 hat keine lokale Weboberfläche.
 
 ## Seriennummern
 

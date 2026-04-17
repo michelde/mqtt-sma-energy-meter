@@ -39,45 +39,46 @@ from jsonpath_ng import parse as jparse
 SMA_EMETER_MCAST_ADDR = "239.12.255.254"
 SMA_EMETER_UDP_PORT   = 9522
 
-OBIS_P_CONSUME_W  = 0x01010400
-OBIS_E_CONSUME_WH = 0x01010800
-OBIS_P_SUPPLY_W   = 0x01020400
-OBIS_E_SUPPLY_WH  = 0x01020800
+OBIS_P_CONSUME_W  = 0x00010400
+OBIS_E_CONSUME_WH = 0x00010800
+OBIS_P_SUPPLY_W   = 0x00020400
+OBIS_E_SUPPLY_WH  = 0x00020800
+
+SUSYID = 0x010E   # SMA Energy Meter (SusyID 270)
 
 OBIS_DUMMY_SEQUENCE = [
-    ('M32', 0x01030400), ('C64', 0x01030800),
-    ('M32', 0x01040400), ('C64', 0x01040800),
-    ('M32', 0x01090400), ('C64', 0x01090800),
-    ('M32', 0x010A0400), ('C64', 0x010A0800),
-    ('M32', 0x010D0400),
-    ('M32', 0x010E0400),
-    ('M32', 0x01150400), ('C64', 0x01150800),
-    ('M32', 0x01160400), ('C64', 0x01160800),
-    ('M32', 0x01170400), ('C64', 0x01170800),
-    ('M32', 0x01180400), ('C64', 0x01180800),
-    ('M32', 0x011D0400), ('C64', 0x011D0800),
-    ('M32', 0x011E0400), ('C64', 0x011E0800),
-    ('M32', 0x011F0400),
-    ('M32', 0x01200400),
-    ('M32', 0x01210400),
-    ('M32', 0x01290400), ('C64', 0x01290800),
-    ('M32', 0x012A0400), ('C64', 0x012A0800),
-    ('M32', 0x012B0400), ('C64', 0x012B0800),
-    ('M32', 0x012C0400), ('C64', 0x012C0800),
-    ('M32', 0x01310400), ('C64', 0x01310800),
-    ('M32', 0x01320400), ('C64', 0x01320800),
-    ('M32', 0x01330400),
-    ('M32', 0x01340400),
-    ('M32', 0x01350400),
-    ('M32', 0x013D0400), ('C64', 0x013D0800),
-    ('M32', 0x013E0400), ('C64', 0x013E0800),
-    ('M32', 0x013F0400), ('C64', 0x013F0800),
-    ('M32', 0x01400400), ('C64', 0x01400800),
-    ('M32', 0x01450400), ('C64', 0x01450800),
-    ('M32', 0x01460400), ('C64', 0x01460800),
-    ('M32', 0x01470400),
-    ('M32', 0x01480400),
-    ('M32', 0x01490400),
+    ('M32', 0x00030400), ('C64', 0x00030800),
+    ('M32', 0x00040400), ('C64', 0x00040800),
+    ('M32', 0x00090400), ('C64', 0x00090800),
+    ('M32', 0x000A0400), ('C64', 0x000A0800),
+    ('M32', 0x000D0400),
+    ('M32', 0x00150400), ('C64', 0x00150800),
+    ('M32', 0x00160400), ('C64', 0x00160800),
+    ('M32', 0x00170400), ('C64', 0x00170800),
+    ('M32', 0x00180400), ('C64', 0x00180800),
+    ('M32', 0x001D0400), ('C64', 0x001D0800),
+    ('M32', 0x001E0400), ('C64', 0x001E0800),
+    ('M32', 0x001F0400),
+    ('M32', 0x00200400),
+    ('M32', 0x00210400),
+    ('M32', 0x00290400), ('C64', 0x00290800),
+    ('M32', 0x002A0400), ('C64', 0x002A0800),
+    ('M32', 0x002B0400), ('C64', 0x002B0800),
+    ('M32', 0x002C0400), ('C64', 0x002C0800),
+    ('M32', 0x00310400), ('C64', 0x00310800),
+    ('M32', 0x00320400), ('C64', 0x00320800),
+    ('M32', 0x00330400),
+    ('M32', 0x00340400),
+    ('M32', 0x00350400),
+    ('M32', 0x003D0400), ('C64', 0x003D0800),
+    ('M32', 0x003E0400), ('C64', 0x003E0800),
+    ('M32', 0x003F0400), ('C64', 0x003F0800),
+    ('M32', 0x00400400), ('C64', 0x00400800),
+    ('M32', 0x00450400), ('C64', 0x00450800),
+    ('M32', 0x00460400), ('C64', 0x00460800),
+    ('M32', 0x00470400),
+    ('M32', 0x00480400),
+    ('M32', 0x00490400),
 ]
 
 # ---------------------------------------------------------------------------
@@ -110,19 +111,17 @@ def build_emeter_packet(
     pos = w16(pos, 0x0000)
     pos = w16(pos, 0x0010)
     pos = w16(pos, 0x6069)
-    pos = w16(pos, 0x015D)   # SusyID 349 = emeter-20
+    pos = w16(pos, SUSYID)
     pos = w32(pos, serial)
     pos = w32(pos, ticker)
 
     payload_len = 12
 
-    # Consume and supply entries first (matching real SMA EMETER packet structure)
     pos = w32(pos, OBIS_P_CONSUME_W);  pos = w32(pos, 0); payload_len += 8
     pos = w32(pos, OBIS_E_CONSUME_WH); pos = w64(pos, 0); payload_len += 12
     pos = w32(pos, OBIS_P_SUPPLY_W);   pos = w32(pos, max(0, int(round(power_w * 10)))); payload_len += 8
     pos = w32(pos, OBIS_E_SUPPLY_WH);  pos = w64(pos, max(0, int(round(energy_wh * 3600)))); payload_len += 12
 
-    # Remaining OBIS channels (reactive, apparent, per-phase, etc.) filled with zeros
     for typ, obis in OBIS_DUMMY_SEQUENCE:
         pos = w32(pos, obis)
         if typ == 'M32':
@@ -151,11 +150,11 @@ class EMETERSender:
         port: int       = SMA_EMETER_UDP_PORT,
         interface: str  = "",
     ):
-        self.serial     = serial
+        self.serial    = serial
         self.mcast_addr = mcast_addr
-        self.port       = port
-        self.interface  = interface
-        self._sock      = self._create_socket()
+        self.port      = port
+        self.interface = interface
+        self._sock     = self._create_socket()
 
     def _create_socket(self) -> socket.socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -207,6 +206,7 @@ class EMeterState:
     energy_wh: float = 0.0
     last_update: float = field(default_factory=time.time)
     timed_out: bool = False
+    is_static: bool = False
     sender: Optional[EMETERSender] = None
 
 
@@ -271,8 +271,9 @@ def load_config(path: Path) -> dict:
             sys.exit(1)
         seen_serials.add(em["serial"])
 
-        if not em.get("topic_power"):
-            print(f"ERROR: emeters[{i}].topic_power fehlt.", file=sys.stderr)
+        is_static = "static_power_w" in em
+        if not is_static and not em.get("topic_power"):
+            print(f"ERROR: emeters[{i}].topic_power fehlt (oder static_power_w setzen).", file=sys.stderr)
             sys.exit(1)
 
         unit = em.get("topic_energy_total_unit", "Wh")
@@ -295,7 +296,8 @@ def build_topic_map(
     topic_map: dict[str, list[tuple[EMeterState, str]]] = {}
 
     for state in states:
-        topic_map.setdefault(state.topic_power, []).append((state, "power"))
+        if state.topic_power:
+            topic_map.setdefault(state.topic_power, []).append((state, "power"))
         if state.topic_energy_total:
             topic_map.setdefault(state.topic_energy_total, []).append((state, "energy"))
 
@@ -415,6 +417,92 @@ def make_on_message(
 
 
 # ---------------------------------------------------------------------------
+# 0x6065 Discovery-Antwort
+# ---------------------------------------------------------------------------
+
+def build_discovery_response(
+    dest_susyid: int,
+    dest_serial: int,
+    src_susyid: int,
+    src_serial: int,
+    request_data: bytes,
+) -> bytes:
+    """Baut eine 0x6065 Discovery-Antwort (58 Bytes, identische Struktur wie Anfrage,
+    Quelle und Ziel getauscht, alles little-endian wie im SHM-Paket)."""
+    buf = bytearray(58)
+    buf[0:4]   = b"SMA\x00"
+    buf[4:6]   = b"\x00\x04"
+    buf[6:8]   = b"\x02\xa0"
+    buf[8:12]  = b"\x00\x00\x00\x01"
+    buf[12:14] = b"\x00\x26"   # inner_len = 38
+    buf[14:16] = b"\x00\x10"
+    buf[16:18] = b"\x60\x65"   # protocol 0x6065
+    buf[18:20] = request_data[18:20]   # gleicher Command wie Anfrage
+    # Ziel: SHM (little-endian)
+    buf[20] = dest_susyid & 0xFF;       buf[21] = (dest_susyid >> 8) & 0xFF
+    buf[22] = dest_serial & 0xFF;       buf[23] = (dest_serial >> 8) & 0xFF
+    buf[24] = (dest_serial >> 16) & 0xFF; buf[25] = (dest_serial >> 24) & 0xFF
+    # Counter spiegeln
+    buf[26:28] = request_data[26:28]
+    # Quelle: unser Gerät (little-endian)
+    buf[28] = src_susyid & 0xFF;        buf[29] = (src_susyid >> 8) & 0xFF
+    buf[30] = src_serial & 0xFF;        buf[31] = (src_serial >> 8) & 0xFF
+    buf[32] = (src_serial >> 16) & 0xFF; buf[33] = (src_serial >> 24) & 0xFF
+    # Restliche Bytes aus der Anfrage spiegeln
+    if len(request_data) >= 54:
+        buf[34:54] = request_data[34:54]
+    buf[54:58] = b"\x00\x00\x00\x00"   # End-Marker
+    return bytes(buf)
+
+
+# ---------------------------------------------------------------------------
+# UDP-Listener – antwortet auf 0x6065 Discovery-Anfragen des SHM
+# ---------------------------------------------------------------------------
+
+def udp_listener_thread(port: int, states: list, log: logging.Logger) -> None:
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(("", port))
+        log.info("UDP-Listener gestartet auf Port %d", port)
+        last_response: dict[str, float] = {}   # addr -> Zeitstempel letzte Antwort
+        while True:
+            data, addr = sock.recvfrom(4096)
+            if len(data) < 20 or data[0:4] != b"SMA\x00":
+                continue
+            proto = (data[16] << 8) | data[17]
+            if proto != 0x6065:
+                log.debug("UDP-EINGEHEND (unbekannt) von %s:%d  proto=0x%04X  len=%d",
+                          addr[0], addr[1], proto, len(data))
+                continue
+            if len(data) < 34:
+                continue
+            # Rate-Limit: max 1 Antwort pro Sekunde pro Quell-IP
+            now = time.time()
+            if now - last_response.get(addr[0], 0) < 1.0:
+                continue
+            last_response[addr[0]] = now
+            # SHM SusyID und Serial aus der Anfrage (little-endian, Offset 28-33)
+            shm_susyid = data[28] | (data[29] << 8)
+            shm_serial = data[30] | (data[31] << 8) | (data[32] << 16) | (data[33] << 24)
+            log.info("Discovery vom SHM (SusyID=%d serial=%d) – sende Antwort für %d Gerät(e)",
+                     shm_susyid, shm_serial, len(states))
+            for state in states:
+                resp = build_discovery_response(
+                    dest_susyid=shm_susyid,
+                    dest_serial=shm_serial,
+                    src_susyid=SUSYID,
+                    src_serial=state.serial,
+                    request_data=data,
+                )
+                sock.sendto(resp, addr)
+                log.info("  → Discovery-Antwort serial=%d SusyID=%d gesendet an %s",
+                         state.serial, SUSYID, addr[0])
+    except Exception as exc:
+        log.error("UDP-Listener Fehler: %s", exc)
+
+
+# ---------------------------------------------------------------------------
 # Watchdog-Thread
 # ---------------------------------------------------------------------------
 
@@ -424,20 +512,31 @@ def watchdog_thread(
     timeout_s: float,
     log: logging.Logger,
 ) -> None:
+    tick = 0
     while True:
         time.sleep(1)
+        tick += 1
         now = time.time()
         with lock:
             for state in states:
-                age = now - state.last_update
-                if age > timeout_s and not state.timed_out:
-                    log.warning(
-                        "[serial=%d] Kein Update seit %.0f s → sende 0 W",
-                        state.serial, age,
-                    )
-                    state.power_w = 0.0
-                    state.timed_out = True
-                    state.sender.send(0.0, state.energy_wh)
+                if state.is_static:
+                    # Leistung um ±1 W oszillieren damit der SHM den Wert als "neu" erkennt
+                    send_power = state.power_w + (1.0 if tick % 2 else -1.0)
+                    state.energy_wh += state.power_w / 3600.0
+                    state.sender.send(send_power, state.energy_wh)
+                    log.debug("[serial=%d] heartbeat %.1f W  %.3f kWh", state.serial, send_power, state.energy_wh / 1000)
+                    continue
+                else:
+                    age = now - state.last_update
+                    if age > timeout_s and not state.timed_out:
+                        log.warning(
+                            "[serial=%d] Kein Update seit %.0f s → sende 0 W",
+                            state.serial, age,
+                        )
+                        state.power_w = 0.0
+                        state.timed_out = True
+                state.sender.send(state.power_w, state.energy_wh)
+                log.debug("[serial=%d] heartbeat %.1f W  %.3f kWh", state.serial, state.power_w, state.energy_wh / 1000)
 
 
 # ---------------------------------------------------------------------------
@@ -495,23 +594,31 @@ def main() -> None:
         )
         state = EMeterState(
             serial=em["serial"],
-            topic_power=em["topic_power"],
+            topic_power=em.get("topic_power", ""),
             topic_power_path=jparse(em["topic_power_path"]) if em.get("topic_power_path") else None,
             topic_energy_total=em.get("topic_energy_total"),
             topic_energy_total_path=jparse(em["topic_energy_total_path"]) if em.get("topic_energy_total_path") else None,
-            topic_energy_total_unit=em["topic_energy_total_unit"],
+            topic_energy_total_unit=em.get("topic_energy_total_unit", "Wh"),
+            power_w=float(em.get("static_power_w", 0.0)),
+            energy_wh=float(em.get("static_energy_wh", 0.0)),
+            is_static="static_power_w" in em,
             sender=sender,
         )
         states.append(state)
-        log.info(
-            "  Meter serial=%d: power=%s%s  energy=%s%s  unit=%s",
-            state.serial,
-            state.topic_power,
-            f" (path: {em['topic_power_path']})" if em.get("topic_power_path") else "",
-            state.topic_energy_total or "(none)",
-            f" (path: {em['topic_energy_total_path']})" if em.get("topic_energy_total_path") else "",
-            state.topic_energy_total_unit,
-        )
+        if em.get("static_power_w") is not None:
+            log.info("  Meter serial=%d: STATIC %.1f W / %.1f Wh  [SusyID=%d]",
+                     state.serial, state.power_w, state.energy_wh, SUSYID)
+        else:
+            log.info(
+                "  Meter serial=%d: power=%s%s  energy=%s%s  unit=%s  [SusyID=%d]",
+                state.serial,
+                state.topic_power,
+                f" (path: {em['topic_power_path']})" if em.get("topic_power_path") else "",
+                state.topic_energy_total or "(none)",
+                f" (path: {em['topic_energy_total_path']})" if em.get("topic_energy_total_path") else "",
+                state.topic_energy_total_unit,
+                SUSYID,
+            )
 
     lock = threading.Lock()
     topic_map = build_topic_map(states, log)
@@ -523,6 +630,14 @@ def main() -> None:
         daemon=True,
     )
     t.start()
+
+    # UDP-Listener starten (antwortet auf 0x6065 Discovery-Anfragen des SHM)
+    tl = threading.Thread(
+        target=udp_listener_thread,
+        args=(SMA_EMETER_UDP_PORT, states, log),
+        daemon=True,
+    )
+    tl.start()
 
     # MQTT-Client aufbauen
     client = mqtt.Client(

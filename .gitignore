@@ -1,3 +1,10 @@
 .env
 __pycache__/
 resources/
+.DS_Store
+*.log
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3

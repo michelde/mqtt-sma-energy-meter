@@ -6,7 +6,7 @@ mqtt:
   port: 1883
   username: ""
   password: ""
-  timeout: 300   # Sekunden ohne MQTT-Nachricht → 0 W an SMA Home Manager senden
+  timeout: 3000   # Sekunden ohne MQTT-Nachricht → 0 W an SMA Home Manager senden
 
 interface: ""    # Multicast-Quell-Interface: IP ("192.168.1.5") oder Name ("eth0")
 log_level: INFO  # DEBUG | INFO | WARNING | ERROR
@@ -24,3 +24,7 @@ emeters:
     topic_energy_total: tele/tasmota_0FF8CC/SENSOR
     topic_energy_total_path: "$.ENERGY.Total"
     topic_energy_total_unit: kWh
+
+  # - serial: 900000003
+  #   static_power_w: 3.0       # fester Testwert in Watt
+  #   static_energy_wh: 1245.0    # fester Testwert in Wh
