@@ -12,6 +12,7 @@ services:
   mqtt-sma-bridge:
     env_file:
       - .env
+    build: .
     image: michelmu/mqtt-sma-emeter:latest
     container_name: mqtt-sma-bridge
     restart: unless-stopped
