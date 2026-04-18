@@ -8,3 +8,4 @@ resources/
 *.pyd
 *.db
 *.sqlite3
+.claude/

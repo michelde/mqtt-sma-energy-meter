@@ -49,6 +49,7 @@ mqtt:
 
 interface: ""            # Multicast-Quell-Interface: IP ("192.168.1.5") oder Name ("eth0")
 log_level: INFO          # DEBUG | INFO | WARNING | ERROR
+send_interval: interval  # "interval" = 1/Sek senden | "onchange" = nur bei Wertänderung
 
 emeters:
   # Meter 1: Power und Energie als separate Topics, plain float
@@ -195,6 +196,18 @@ Nach `mqtt.timeout` Sekunden ohne neue Nachricht erscheint:
 | `--config PATH` | Pfad zur YAML-Datei (Standard: `/app/config.yaml`) |
 | `--log-level LEVEL` | Log-Level überschreiben (DEBUG / INFO / WARNING / ERROR) |
 
+## send_interval
+
+Steuert, wann der Watchdog-Thread UDP-Pakete sendet:
+
+| Wert | Verhalten |
+|------|-----------|
+| `interval` (default) | Sendet jede Sekunde ein Paket pro Meter — auch wenn sich der Wert nicht geändert hat. Empfohlen für normale Produktion. |
+| `onchange` | Sendet nur, wenn sich `power_w` oder `energy_wh` seit dem letzten Paket geändert haben. Nützlich um zu testen, ob der SHM 2.0 auch ohne kontinuierlichen Stream stabil bleibt. |
+
+> In beiden Modi läuft der Watchdog-Thread weiterhin jede Sekunde, um das
+> Timeout-Verhalten (0 W nach Ausfall) sicherzustellen.
+
 ## Timeout-Verhalten
 
 Empfängt ein Meter länger als `mqtt.timeout` Sekunden keine MQTT-Nachricht,
@@ -205,7 +218,7 @@ Geräteausfall automatisch gelöscht.
 ## Technische Details
 
 - **Protokoll:** SMA Speedwire EMETER v1.0 (UDP-Multicast `239.12.255.254:9522`)
-- **Heartbeat:** Watchdog-Thread sendet jede Sekunde ein UDP-Paket pro Meter — unabhängig von MQTT-Updates. Ohne kontinuierlichen Stream markiert der SHM das Gerät als „getrennt".
+- **Heartbeat:** Watchdog-Thread läuft jede Sekunde pro Meter. Im Modus `interval` wird dabei immer ein UDP-Paket gesendet; im Modus `onchange` nur bei Wertänderung. Ohne kontinuierlichen Stream kann der SHM das Gerät als „getrennt" markieren — `interval` ist daher der sichere Default.
 - **Discovery:** Der SMA Home Manager 2.0 sendet alle ~5 Sekunden einen 0x6065-Discovery-Broadcast. Die Bridge antwortet darauf (Unicast zurück an den SHM), damit der SHM das Gerät als dauerhaft aktiv erkennt und Daten an ennexOS weiterleitet.
 - **Nebenläufigkeit:** MQTT-Callback-Thread + Watchdog-Daemon-Thread + UDP-Listener-Thread, geschützt durch `threading.Lock`
 - **Wiederverbindung:** paho-mqtt verbindet sich bei Verbindungsverlust automatisch neu
