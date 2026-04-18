@@ -10,6 +10,7 @@ mqtt:
 
 interface: ""    # Multicast-Quell-Interface: IP ("192.168.1.5") oder Name ("eth0")
 log_level: INFO  # DEBUG | INFO | WARNING | ERROR
+send_interval: onchange  # "interval" = 1/Sek senden | "onchange" = nur bei Wertänderung
 
 emeters:
   # Beispiel 1: OpenDTU – Power und Energie auf getrennten Topics als plain float

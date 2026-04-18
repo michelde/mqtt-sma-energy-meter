@@ -208,6 +208,8 @@ class EMeterState:
     timed_out: bool = False
     is_static: bool = False
     sender: Optional[EMETERSender] = None
+    last_sent_power_w: Optional[float] = None
+    last_sent_energy_wh: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------
@@ -248,6 +250,11 @@ def load_config(path: Path) -> dict:
     # Globale Defaults
     cfg.setdefault("interface", "")
     cfg.setdefault("log_level", "INFO")
+    cfg.setdefault("send_interval", "interval")
+
+    if cfg["send_interval"] not in ("interval", "onchange"):
+        print("ERROR: send_interval muss 'interval' oder 'onchange' sein.", file=sys.stderr)
+        sys.exit(1)
 
     valid_log_levels = {"DEBUG", "INFO", "WARNING", "ERROR"}
     if cfg["log_level"].upper() not in valid_log_levels:
@@ -510,6 +517,7 @@ def watchdog_thread(
     states: list[EMeterState],
     lock: threading.Lock,
     timeout_s: float,
+    send_interval: str,
     log: logging.Logger,
 ) -> None:
     tick = 0
@@ -523,8 +531,13 @@ def watchdog_thread(
                     # Leistung um ±1 W oszillieren damit der SHM den Wert als "neu" erkennt
                     send_power = state.power_w + (1.0 if tick % 2 else -1.0)
                     state.energy_wh += state.power_w / 3600.0
-                    state.sender.send(send_power, state.energy_wh)
-                    log.debug("[serial=%d] heartbeat %.1f W  %.3f kWh", state.serial, send_power, state.energy_wh / 1000)
+                    if (send_interval == "interval"
+                            or send_power != state.last_sent_power_w
+                            or state.energy_wh != state.last_sent_energy_wh):
+                        state.sender.send(send_power, state.energy_wh)
+                        state.last_sent_power_w = send_power
+                        state.last_sent_energy_wh = state.energy_wh
+                        log.debug("[serial=%d] heartbeat %.1f W  %.3f kWh", state.serial, send_power, state.energy_wh / 1000)
                     continue
                 else:
                     age = now - state.last_update
@@ -535,8 +548,15 @@ def watchdog_thread(
                         )
                         state.power_w = 0.0
                         state.timed_out = True
-                state.sender.send(state.power_w, state.energy_wh)
-                log.debug("[serial=%d] heartbeat %.1f W  %.3f kWh", state.serial, state.power_w, state.energy_wh / 1000)
+                if (send_interval == "interval"
+                        or state.power_w != state.last_sent_power_w
+                        or state.energy_wh != state.last_sent_energy_wh):
+                    state.sender.send(state.power_w, state.energy_wh)
+                    state.last_sent_power_w = state.power_w
+                    state.last_sent_energy_wh = state.energy_wh
+                    log.debug("[serial=%d] heartbeat %.1f W  %.3f kWh", state.serial, state.power_w, state.energy_wh / 1000)
+                else:
+                    log.debug("[serial=%d] keine Änderung – kein Senden", state.serial)
 
 
 # ---------------------------------------------------------------------------
@@ -583,6 +603,7 @@ def main() -> None:
     log.info("  MQTT user   : %s", cfg["mqtt"]["username"] or "(none)")
     log.info("  Timeout     : %s s", cfg["mqtt"]["timeout"])
     log.info("  Interface   : %s", cfg["interface"] or "(default)")
+    log.info("  Send mode   : %s", cfg["send_interval"])
     log.info("  Log level   : %s", log_level)
 
     # Meter-States und Sender erstellen
@@ -626,7 +647,7 @@ def main() -> None:
     # Watchdog-Daemon starten
     t = threading.Thread(
         target=watchdog_thread,
-        args=(states, lock, cfg["mqtt"]["timeout"], log),
+        args=(states, lock, cfg["mqtt"]["timeout"], cfg["send_interval"], log),
         daemon=True,
     )
     t.start()
